@@ -9,11 +9,8 @@ services:
       - traefik-public
     env_file:
       - .env
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
     restart: on-failure
-    command: ["python", "main.py"]
+    command: ["./wait-for-it.sh", "rabbitmq:5672", "--", "python", "./main.py"]
 
 networks:
   traefik-public:

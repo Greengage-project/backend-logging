@@ -2,8 +2,6 @@ import asyncio
 import aiormq
 
 from aiormq.abc import DeliveredMessage
-from schemas import RabbitBody
-
 import os
 import logging
 from sys import stdout
@@ -70,6 +68,6 @@ async def consume():
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
-    # logger.info("CONSUME")
+    logger.info("CONSUMER STARTED")
     loop.run_until_complete(consume())
     loop.run_forever()
