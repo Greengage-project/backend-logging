@@ -6,3 +6,4 @@ WORKDIR /app
 RUN pip install aiormq
 
 CMD ["python", "./main.py"]
+/home/diego.bernabe/proyectos/Interlink
