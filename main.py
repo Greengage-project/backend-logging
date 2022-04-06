@@ -6,24 +6,7 @@ import os
 import logging
 from sys import stdout
 import json
-from base64 import b64encode, b64decode
-
-class RabbitBody:
-    service: str
-    data: dict
-    
-    def __init__(self, service, data):
-        self.service = service
-        self.data = data
-
-    def encode(self):
-        dicc = {"service": self.service, "data": self.data}
-        return b64encode(json.dumps(dicc).encode())
-
-    @staticmethod
-    def decode(encoded):
-        dicc = json.loads(b64decode(encoded))
-        return RabbitBody(**dicc)
+from base64 import b64decode
         
 # Define logger
 logger = logging.getLogger('mylogger')
@@ -44,8 +27,8 @@ rabbitmq_user = os.environ.get("RABBITMQ_USER")
 rabbitmq_password = os.environ.get("RABBITMQ_PASSWORD")
 
 async def log_event(message: DeliveredMessage):
-    response = RabbitBody.decode(message.body)
-    logger.info(response.__dict__)
+    response = json.loads(b64decode(message.body))
+    logger.info(response)
 
     await message.channel.basic_ack(
         message.delivery.delivery_tag
