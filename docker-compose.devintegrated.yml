@@ -11,6 +11,10 @@ services:
       - .env
     restart: on-failure
     command: ["./wait-for-it.sh", "rabbitmq:5672", "--", "python", "./main.py"]
+    logging:
+      driver: "json-file"
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
 networks:
   traefik-public:

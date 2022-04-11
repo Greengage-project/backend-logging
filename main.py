@@ -15,7 +15,8 @@ logger.setLevel(logging.DEBUG) # set logger level
 # logFormatter = logging.Formatter\
 # ("%(name)-12s %(asctime)s %(levelname)-8s %(filename)s:%(funcName)s %(message)s")
 logFormatter = logging.Formatter\
-("%(asctime)s %(levelname)-8s %(message)s")
+("%(message)s")
+# ("%(asctime)s %(levelname)-8s %(message)s")
 consoleHandler = logging.StreamHandler(stdout) #set streamhandler to stdout
 consoleHandler.setFormatter(logFormatter)
 logger.addHandler(consoleHandler)
