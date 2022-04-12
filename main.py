@@ -28,8 +28,8 @@ rabbitmq_user = os.environ.get("RABBITMQ_USER")
 rabbitmq_password = os.environ.get("RABBITMQ_PASSWORD")
 
 async def log_event(message: DeliveredMessage):
-    response = json.loads(b64decode(message.body))
-    logger.info(response)
+    response = b64decode(message.body)
+    logger.info(response.decode("utf-8"))
 
     await message.channel.basic_ack(
         message.delivery.delivery_tag
