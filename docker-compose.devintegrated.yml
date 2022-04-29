@@ -10,12 +10,18 @@ services:
     env_file:
       - .env
     restart: on-failure
-    command: ["./wait-for-it.sh", "rabbitmq:5672", "--", "python", "./main.py"]
+    command: ["./wait-for-it.sh", "rabbitmq:5672", "--", "uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "${PORT}"]
     logging:
       driver: "json-file"
       options:
         tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
-
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.http.routers.${STACK_NAME?Variable not set}-logging-http.rule=PathPrefix(`/logging`)
+      - traefik.http.services.${STACK_NAME?Variable not set}-logging.loadbalancer.server.port=${PORT}
+      - traefik.http.routers.${STACK_NAME?Variable not set}-logging-http.middlewares=logging-stripprefix
+      - traefik.http.middlewares.logging-stripprefix.stripprefix.prefixes=/logging
 networks:
   traefik-public:
     external: true

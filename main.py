@@ -5,9 +5,19 @@ from aiormq.abc import DeliveredMessage
 import os
 import logging
 from sys import stdout
-import json
 from base64 import b64decode
-        
+from fastapi import FastAPI, Depends
+from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
+from deps import get_current_user
+import json
+
+BASE_PATH = os.environ.get("BASE_PATH")
+
+app = FastAPI(
+    docs_url="/docs", openapi_url=f"/api/v1/openapi.json", root_path=BASE_PATH
+)
+
 # Define logger
 logger = logging.getLogger('mylogger')
 
@@ -29,14 +39,16 @@ rabbitmq_password = os.environ.get("RABBITMQ_PASSWORD")
 
 async def log_event(message: DeliveredMessage):
     response = b64decode(message.body)
-    logger.info(response.decode("utf-8"))
+    message_dict = json.loads(response.decode("utf-8"))
+    message_dict["from"] = "RABBITMQ"
+    logger.info(message_dict)
 
     await message.channel.basic_ack(
         message.delivery.delivery_tag
     )
 
-async def consume():
-    connection = await aiormq.connect("amqp://{}:{}@{}/".format(rabbitmq_user, rabbitmq_password, rabbitmq_host))
+async def consume(loop):
+    connection = await aiormq.connect("amqp://{}:{}@{}/".format(rabbitmq_user, rabbitmq_password, rabbitmq_host), loop=loop)
     channel = await connection.channel()
     
     await channel.basic_qos(prefetch_count=1)
@@ -50,8 +62,35 @@ async def consume():
 
     await channel.basic_consume(declare.queue, log_event)
 
-if __name__ == "__main__":
+@app.on_event('startup')
+def startup():
     loop = asyncio.get_event_loop()
-    logger.info("CONSUMER STARTED")
-    loop.run_until_complete(consume())
-    loop.run_forever()
+    # use the same loop to consume
+    asyncio.ensure_future(consume(loop)) 
+
+@app.get("/")
+async def root():
+    return RedirectResponse(url=f"{BASE_PATH}/docs")
+
+
+class LogsCreate(BaseModel):
+    action: str
+    model: str
+    object_id: str
+
+
+@app.post("/api/v1/log")
+async def insert_log(
+    *,
+    log_in: LogsCreate,
+    # current_user: dict = Depends(get_current_user),
+):
+    """
+    Insert new log
+    """
+    message_dict = log_in.__dict__
+    message_dict["from"] = "API"
+    return logger.info(message_dict)
+
+
+
