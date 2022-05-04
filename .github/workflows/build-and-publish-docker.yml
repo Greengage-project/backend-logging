@@ -15,8 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Get tag latest
-          id: tag_latest
-          run: echo "::set-output name=tag_latest::$(echo $(echo ${{ github.ref_name }} | sed 's/[^a-z]*//g' | sed 's/^master//g'; echo latest) | tr " " ".")"
+        id: tag_latest
+        run: echo "::set-output name=tag_latest::$(echo $(echo ${{ github.ref_name }} | sed 's/[^a-z]*//g' | sed 's/^master//g'; echo latest) | tr " " ".")"
       - name: Log tags
         id: log_tags
         run: |
