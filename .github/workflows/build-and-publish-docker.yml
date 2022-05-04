@@ -4,14 +4,13 @@ on:
 
   workflow_dispatch:
 
-  tags:
-    - '*'
-
-
   repository_dispatch:
     types: [build-and-publish-docker-logging]
 
   push:
+    tags:
+      - '*'
+
     branches:
       - "master"
 jobs:
