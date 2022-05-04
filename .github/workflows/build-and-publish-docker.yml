@@ -4,6 +4,10 @@ on:
 
   workflow_dispatch:
 
+  tags:
+    - '*'
+
+
   repository_dispatch:
     types: [build-and-publish-docker-logging]
 
@@ -16,15 +20,7 @@ jobs:
     steps:
       - name: Get current date
         id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
-      - name: Get tag latest
-        id: tag_latest
-        run: echo "::set-output name=tag_latest::$(echo $(echo ${{ github.ref_name }} | sed 's/[^a-z]*//g' | sed 's/^master//g'; echo latest) | tr " " ".")"
-      - name: Log tags
-        id: log_tags
-        run: |
-          echo ${{ steps.tag_latest.outputs.tag_latest }}
-          echo ${{ github.ref_name }}
+        run: echo "::set-output name=date::$(date +'%Y%m%d')"
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up Docker Buildx
@@ -41,8 +37,7 @@ jobs:
           context: .
           push: true
           tags: |
-            interlinkproject/backend-logging:${{ steps.tag_latest.outputs.tag_latest }}
             interlinkproject/backend-logging:${{ github.ref_name }}
-            interlinkproject/backend-logging:${{ steps.date.outputs.date }}
+            interlinkproject/backend-logging:${{ github.ref_name }}.${{ steps.date.outputs.date }}
           cache-from: type=registry,ref=interlinkproject/backend-logging:buildcache
           cache-to: type=registry,ref=interlinkproject/backend-logging:buildcache,mode=max
