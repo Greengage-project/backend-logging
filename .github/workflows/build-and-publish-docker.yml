@@ -1,6 +1,9 @@
 name: build-and-publish-docker-logging
 
 on:
+
+  workflow_dispatch:
+
   repository_dispatch:
     types: [build-and-publish-docker-logging]
 
