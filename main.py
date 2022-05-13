@@ -40,7 +40,7 @@ rabbitmq_password = os.environ.get("RABBITMQ_PASSWORD")
 async def log_event(message: DeliveredMessage):
     response = b64decode(message.body)
     message_dict = json.loads(response.decode("utf-8"))
-    message_dict["from"] = "RABBITMQ"
+    message_dict["from"] = "MESSAGE_BROKER"
     logger.info(message_dict)
 
     await message.channel.basic_ack(
