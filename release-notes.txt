@@ -1,2 +1,5 @@
 NEW
 • Exposes an API (with FastAPI) to log data
+
+IMPROVED:
+• Gunicorn on production mode (instead of uvicorn)
