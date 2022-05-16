@@ -165,7 +165,6 @@ The data sent to the registration service needs to contain the information relev
 
 ```
 await log({
-    **{
     "model": "ASSET",
     "action": "CREATE",
     "crud": False,
@@ -174,8 +173,14 @@ await log({
     "objective_id": asset.task.objective_id,
     "task_id": asset.task_id,
     "asset_id": asset.id,
-},
-**specific_log_data
+    "external_interlinker": False,
+    "interlinker_type": "SOFTWAREINTERLINKER EXTERNALINTERLINKER",
+    "knowledgeinterlinker_id": asset.knowledgeinterlinker_id,
+    "knowledgeinterlinker_name": interlinker.get("name"),
+    "softwareinterlinker_id": interlinker.get("softwareinterlinker").get("id"),
+    "softwareinterlinker_name": interlinker.get("softwareinterlinker").get("name"),
+    "externalinterlinker_id": external_info.get("id"),
+    "externalinterlinker_name": external_info.get("name")
 })
 ```
 
