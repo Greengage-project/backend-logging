@@ -184,8 +184,8 @@ await log({
 })
 ```
 
-The above line of code takes the data from a description and creates a dictionary including (id,title and description). It also calls the log() function that was defined to send log messages.
+The above line of code takes the data from an asset and creates a dictionary including (model, action, phase, task_id, etc). It also calls the log() function that was defined to send log messages. The amount of information saved in a log depends on the specific action that you want to record, therefore the internal structure could vary from one to another. 
 
-The implementation of the sending functions could include a series of additional data such as user_id or any other relevant data. This process could be included before sending the message in the log() function as is done in the servicepedia case.
+The implementation of the sending functions could include a series of additional data such as user_id or any other relevant data. Only the timestamp value is taken automatically when the message arrives at the server. This process could be included before sending the message in the log() function as is done in the servicepedia case.
 
 
