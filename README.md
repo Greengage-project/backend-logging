@@ -13,7 +13,7 @@ The Logging microservice takes all information in the queue (a queue is the name
 
 The service must be included within docker-compose. For example:
 
-```
+```yaml
  rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
@@ -64,45 +64,60 @@ Another important detail is the version of the backend-logging service, this mus
 
 
 ## Send or produce logs
+### Data structure
 
-A producer program needs to connect to the data store to send messages. There are two ways to send messages (logs) to be stored, these are:
-- Use the RabbitMQ (message broker).
-- Use the API.
+The data sent to the registration service needs to contain the information relevant to the application. In the case of the coproduction microservice, for example, a data log could contain the following information when a user creates a new asset.
 
-### Use of RabbitMQ
+```python
+await log({
+    "model": "ASSET",
+    "action": "CREATE",
+    "coproductionprocess_id": asset.task.objective.phase.coproductionprocess_id,
+    "phase_id": asset.task.objective.phase_id,
+    "objective_id": asset.task.objective_id,
+    "task_id": asset.task_id,
+    "asset_id": asset.id,
+    "external_interlinker": False,
+    "interlinker_type": "SOFTWAREINTERLINKER EXTERNALINTERLINKER",
+    "knowledgeinterlinker_id": asset.knowledgeinterlinker_id,
+    "knowledgeinterlinker_name": interlinker.get("name"),
+    "softwareinterlinker_id": interlinker.get("softwareinterlinker").get("id"),
+    "softwareinterlinker_name": interlinker.get("softwareinterlinker").get("name"),
+})
+```
+
+The above line of code calls the log function (mentioned afterwards) with a dictionary including relevant data about the action performed (model, action, phase, task_id, etc). The amount of information saved in a log depends on the specific action that you want to record, therefore the internal structure could vary from one to another. 
+
+Nevertheless, it is recommended to add at least these keys:
+
+* "user_id"
+* "service" ("coproduction", "servicepedia"...)
+* "model" ("ASSET", "COPRODUCTIONPROCESS"...)
+* "action" (GET, CREATE, UPDATE, DELETE)
+
+### Send a log through a POST request to the API
+
+![API](images/api.png)
+
+You can log an action by simply creating a POST request to these endpoints (depending on the environment).
+
+* POST http://localhost/logging/api/v1/log
+* POST https://dev.interlink-project.eu/logging/api/v1/log
+* POST https://demo.interlink-project.eu/logging/api/v1/log
+* POST https://zgz.interlink-project.eu/logging/api/v1/log
+* POST https://varam.interlink-project.eu/logging/api/v1/log
+* POST https://mef.interlink-project.eu/logging/api/v1/log
+
+Furthermore, the calls can be made internally, by replacing the DNS name by the name of the logging docker service:
+
+* POST http://logging/logging/api/v1/log
+
+### Send a log through RabbitMQ
 
 Although it is possible to use the API deployed by the "backend-logging" microservice, another way is to connect directly to the message broker. The steps required to send messages are as follows:
 
-#### 1. Connect to the RabbitMQ microservice (Python Flask).
-
 The connection to the RabbitMQ service may vary depending on the libraries used by the producer program. RabbitMQ currently supports connection to most programming languages. In order to illustrate an example of how a connection is made, we will describe the code written in python.
 
-The library that we will use in this example is [Pika Python client](https://pika.readthedocs.io/en/stable/). Pika is a pure-Python implementation of the AMQP 0-9-1 protocol. The foollow function will connect to the service and send a message:
-
-```
-1 import pika
-  from base64 import b64encode
-  from uuid import UUID
-
-2 def log(data: dict):
-3    credentials = pika.PlainCredentials(rabbitmq_user, rabbitmq_password)
-4    parameters = pika.ConnectionParameters(host=rabbitmq_host,credentials=credentials)
-
-5    connection = pika.BlockingConnection(parameters)
-
-6    channel = connection.channel()
-
-7    channel.exchange_declare(
-        exchange=exchange_name, exchange_type='direct'
-    )
-8    request = b64encode(json.dumps(data,cls=UUIDEncoder).encode())
-
-9    channel.basic_publish(
-        exchange=exchange_name,
-        routing_key='logging', 
-        body=request
-    )
-```
 Three environment variables must be specified to make the connection, these were specified during the configuration process. These are:
 
 - exchange_name = os.environ.get("EXCHANGE_NAME")
@@ -116,28 +131,22 @@ Then we create the connection to the server and establish a communication channe
 
 Finally, the message is sent through the basic_publish function on the previously established channel. Again, the variable routing_key was defined in the rabbitMQ deployment and in our case it is 'logging'. The request variable, (at line 9) is the encoded form of the python dictionary that is the input to the function, we use library base64 as is show in the first part of the code.
 
-The complete python file that performs the sending of messages for the servicepedia microservice is [messages.py](https://github.com/interlink-project/interlinker-service-augmenter/blob/master/app/messages.py).
+The library used in this example is [Aiormq Python client](https://github.com/mosquito/aiormq). Aiormq is a pure python AMQP client library. The following function will connect to the service and send a message:
 
-#### 2. Connect to the RabbitMQ microservice ( Python Fastapi ).
+```python
 
-[FastAPI](https://fastapi.tiangolo.com/) is a modern, fast (high-performance), web framework for building APIs with Python 3.6+ based on standard Python type hints. This platform allows the use of libraries such as React that make asynchronous calls (await).
+rabbitmq_url = "amqp://{}:{}@{}/".format(rabbitmq_user rabbitmq_password, rabbitmq_host)
 
-The library that we will use in this example is [Aiormq Python client](https://github.com/mosquito/aiormq). Aiormq is a pure python AMQP client library. The foollow function will connect to the service and send a message:
-
-```
 async def log(data: dict):
     if is_logging_disabled():
         return
 
-    try:
-        data["user_id"] = context.data.get("user", {}).get("sub", None)
-    except:
-        data["user_id"] = None
+    data["user_id"] = user.get("id", None)
     data["service"] = "coproduction"
 
     request = b64encode(json.dumps(data,cls=UUIDEncoder).encode())
     
-    connection = await aiormq.connect("amqp://{}:{}@{}/".format(rabbitmq_user, rabbitmq_password, rabbitmq_host))
+    connection = await aiormq.connect(rabbitmq_url)
     channel = await connection.channel()
 
     await channel.exchange_declare(
@@ -152,39 +161,8 @@ async def log(data: dict):
             delivery_mode=2
         )
     )
-    print("MENSAJE ENVIADO POR RABBITMQ")
 ```
-The similarity with the previous example is evident, first it connects with the credentials, it establishes a channel, route identifier and an exchanger. The message is then sent.
 
 The complete python file that performs the sending of messages for the servicepedia microservice is [messages.py](https://github.com/interlink-project/backend-coproduction/blob/master/coproduction/app/messages.py).
-
-#### 2. Definition of a data structure.
-
-The data sent to the registration service needs to contain the information relevant to the application. In the case of Servicepedia, for example, a data log could contain the following information when a user creates a new asset.
-
-```
-await log({
-    "model": "ASSET",
-    "action": "CREATE",
-    "crud": False,
-    "coproductionprocess_id": asset.task.objective.phase.coproductionprocess_id,
-    "phase_id": asset.task.objective.phase_id,
-    "objective_id": asset.task.objective_id,
-    "task_id": asset.task_id,
-    "asset_id": asset.id,
-    "external_interlinker": False,
-    "interlinker_type": "SOFTWAREINTERLINKER EXTERNALINTERLINKER",
-    "knowledgeinterlinker_id": asset.knowledgeinterlinker_id,
-    "knowledgeinterlinker_name": interlinker.get("name"),
-    "softwareinterlinker_id": interlinker.get("softwareinterlinker").get("id"),
-    "softwareinterlinker_name": interlinker.get("softwareinterlinker").get("name"),
-    "externalinterlinker_id": external_info.get("id"),
-    "externalinterlinker_name": external_info.get("name")
-})
-```
-
-The above line of code takes the data from an asset and creates a dictionary including (model, action, phase, task_id, etc). It also calls the log() function that was defined to send log messages. The amount of information saved in a log depends on the specific action that you want to record, therefore the internal structure could vary from one to another. 
-
-The implementation of the sending functions could include a series of additional data such as user_id or any other relevant data. Only the timestamp value is taken automatically when the message arrives at the server. This process could be included before sending the message in the log() function as is done in the servicepedia case.
 
 
