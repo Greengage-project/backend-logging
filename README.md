@@ -51,12 +51,21 @@ The service must be included within docker-compose. For example:
 ```
 The variable "RABBITMQ_DEFAULT_USER", contains the user name assigned to the Rabbitmq service, while the variable "RABBITMQ_DEFAULT_PASS" is the password used at login time. All the lines of code presented above have been taken as a reference from the [file](https://github.com/interlink-project/interlinker-service-augmenter/blob/master/docker-compose.yml) used for the local deployment of the servicepedia.
 
+The following are all the environment variables that need to be specified, during the setup of the services.
+
+RABBITMQ_DEFAULT_USER=
+RABBITMQ_DEFAULT_PASS=
+RABBITMQ_HOST=
+RABBITMQ_USER=
+RABBITMQ_PASSWORD=
+EXCHANGE_NAME = logging
+
 Another important detail is the version of the backend-logging service, this must correspond to the most recent version of the microservice (this information can be seen at the [link](https://github.com/interlink-project/backend-logging/tags).
 
 
 ## Send or produce logs
 
-A producer program need to connect to the data store to send a messages. There are two ways to send messages (logs) to be stored, these ways are:
+A producer program need to connect to the data store to send a messages. There are two ways to send messages (logs) to be stored, they are:
 - Use the API.
 - Use the RabbitMQ (message broker).
 
@@ -95,7 +104,7 @@ The library that we will use in this example is [Pika Python client](https://pik
         body=request
     )
 ```
-Three environment variables must be defined to make the connection. These are:
+Three environment variables must be specified to make the connection, these were specified during the configuration process. These are:
 
 - exchange_name = os.environ.get("EXCHANGE_NAME")
 - rabbitmq_host = os.environ.get("RABBITMQ_HOST")
@@ -152,14 +161,24 @@ The complete python file that performs the sending of messages for the servicepe
 
 #### 2. Definition of a data structure.
 
-The data sent to the registration service needs to contain the information relevant to the application. In the case of Servicepedia, for example, a data log could contain the following information when a user creates a new annotation.
+The data sent to the registration service needs to contain the information relevant to the application. In the case of Servicepedia, for example, a data log could contain the following information when a user creates a new asset.
 
 ```
-log({'id':description['id'],
-     'title':description['title'],
-     'description':description['description']})
-
+await log({
+    **{
+    "model": "ASSET",
+    "action": "CREATE",
+    "crud": False,
+    "coproductionprocess_id": asset.task.objective.phase.coproductionprocess_id,
+    "phase_id": asset.task.objective.phase_id,
+    "objective_id": asset.task.objective_id,
+    "task_id": asset.task_id,
+    "asset_id": asset.id,
+},
+**specific_log_data
+})
 ```
+
 The above line of code takes the data from a description and creates a dictionary including (id,title and description). It also calls the log() function that was defined to send log messages.
 
 The implementation of the sending functions could include a series of additional data such as user_id or any other relevant data. This process could be included before sending the message in the log() function as is done in the servicepedia case.
