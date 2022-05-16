@@ -66,7 +66,11 @@ async def consume(loop):
 def startup():
     loop = asyncio.get_event_loop()
     # use the same loop to consume
-    asyncio.ensure_future(consume(loop)) 
+    try:
+        asyncio.ensure_future(consume(loop)) 
+    except Exception as e:
+        print("ERROR TO START CONSUMER")
+        raise e
 
 @app.get("/")
 async def root():
