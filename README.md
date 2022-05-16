@@ -1,15 +1,15 @@
 # Logging Instruction for Microservices
 
-The microservice called "backend-logging", aims to centralize the logs that are maintained by user actions. Within each of the deployed microservices, the necessary functions for sending logs to this component must be implemented.
+The microservice called "backend-logging", aims to centralize the logs that resulf from user actions. Within each of the deployed microservices, the necessary functions for sending logs to this component must be implemented.
 
-The purpose of this instruction manual is to describe the series of steps that a microservice must perform to store and access the logs.
+The purpose of this short manual is to describe the series of steps that a microservice must perform to store and access the logs.
 
 ## Run the service
-To deploy it locally in docker is required to deploy two microservices: rabbitmq and logging. 
+To deploy it locally in Docker, two microservices are required: rabbitmq and logging. 
 
-[RabbitMQ](https://www.rabbitmq.com/) is a message broker: it accepts and forwards messages. You can think about it as a post office: when you put the mail that you want posting in a post box, you can be sure that the letter carrier will eventually deliver the mail to your recipient. In this analogy, RabbitMQ is a post box, a post office, and a letter carrier.
+[RabbitMQ](https://www.rabbitmq.com/) is a message broker: it accepts and forwards messages. You can think about it as a post office: when you depot the mail that you want posting in a post box, you can be sure that the letter carrier will eventually deliver the mail to your recipient. In this analogy, RabbitMQ is a post box, a post office, and a letter carrier.
 
-Logging microservice take all information in the queue (a queue is the name for a post box which lives inside RabbitMQ) and stores it in a central storage unit.
+The Logging microservice takes all information in the queue (a queue is the name for a post box which lives inside RabbitMQ) and stores it in a central storage unit.
 
 The service must be included within docker-compose. For example:
 
@@ -65,10 +65,9 @@ Another important detail is the version of the backend-logging service, this mus
 
 ## Send or produce logs
 
-A producer program need to connect to the data store to send a messages. There are two ways to send messages (logs) to be stored, they are:
-- Use the API.
+A producer program needs to connect to the data store to send messages. There are two ways to send messages (logs) to be stored, these are:
 - Use the RabbitMQ (message broker).
-
+- Use the API.
 
 ### Use of RabbitMQ
 
@@ -76,7 +75,7 @@ Although it is possible to use the API deployed by the "backend-logging" microse
 
 #### 1. Connect to the RabbitMQ microservice (Python Flask).
 
-The connection to the RabbitMQ service may vary depending on the libraries used by the producer program. RabbitMQ currently supports connection to most programming languages. In order to illustrate an example of how a connection is made, we will address the code used with python.
+The connection to the RabbitMQ service may vary depending on the libraries used by the producer program. RabbitMQ currently supports connection to most programming languages. In order to illustrate an example of how a connection is made, we will describe the code written in python.
 
 The library that we will use in this example is [Pika Python client](https://pika.readthedocs.io/en/stable/). Pika is a pure-Python implementation of the AMQP 0-9-1 protocol. The foollow function will connect to the service and send a message:
 
@@ -115,7 +114,7 @@ The username and password and exchange_name must be the same as the one used for
 
 Then we create the connection to the server and establish a communication channel and declares the exchanger name and type. These parameters must be defined when deploying the RabbitMQ service and are defined in the .env file that contains the environment variables.
 
-Finally, the message is sent through the basic_publish function on the previously established channel. Again the variable routing_key was defined in the rabbitMQ deployment and in our case it is 'logging'. The request variable, (at line 9) is the encoded form of the python dictionary that is the input to the function, we use library base64 as is show in the first part of the code.
+Finally, the message is sent through the basic_publish function on the previously established channel. Again, the variable routing_key was defined in the rabbitMQ deployment and in our case it is 'logging'. The request variable, (at line 9) is the encoded form of the python dictionary that is the input to the function, we use library base64 as is show in the first part of the code.
 
 The complete python file that performs the sending of messages for the servicepedia microservice is [messages.py](https://github.com/interlink-project/interlinker-service-augmenter/blob/master/app/messages.py).
 
