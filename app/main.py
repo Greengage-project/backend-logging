@@ -69,8 +69,8 @@ def startup():
     try:
         asyncio.ensure_future(consume(loop)) 
     except Exception as e:
-        print("ERROR TO START CONSUMER")
-        raise e
+        logger.exception(e)
+        raise Exception("ERROR TO START CONSUMER")
 
 @app.get("/")
 async def root():
