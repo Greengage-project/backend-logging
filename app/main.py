@@ -10,7 +10,7 @@ import aiormq
 from aiormq.abc import DeliveredMessage
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Extra
 
 BASE_PATH = os.environ.get("BASE_PATH")
 
@@ -79,7 +79,7 @@ def startup():
 async def root():
     return RedirectResponse(url=f"{BASE_PATH}/docs")
 
-class LogsCreate(BaseModel):
+class LogsCreate(BaseModel, extra=Extra.allow):
     action: Optional[str]
     model: Optional[str]
     object_id: Optional[str]

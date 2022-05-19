@@ -1,5 +1,4 @@
-NEW
-• Exposes an API (with FastAPI) to log data
+VERSION v1.0.2
 
-IMPROVED:
-• Gunicorn on production mode (instead of uvicorn)
+FIXED
+• API Schema accepts arbitrary keys
