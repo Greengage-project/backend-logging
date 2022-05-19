@@ -80,10 +80,12 @@ async def root():
     return RedirectResponse(url=f"{BASE_PATH}/docs")
 
 class LogsCreate(BaseModel, extra=Extra.allow):
+    user_id: str
+    service: str
     action: Optional[str]
     model: Optional[str]
     object_id: Optional[str]
-    user_id: str
+    
 
 
 @app.post("/api/v1/log")
