@@ -2,3 +2,5 @@ VERSION v1.0.2
 
 FIXED
 • API Schema accepts arbitrary keys
+• User_id and service mandatory
+• Logs from rabbitmq are validated against schema

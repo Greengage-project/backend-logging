@@ -14,6 +14,14 @@ from pydantic import BaseModel, Extra
 
 BASE_PATH = os.environ.get("BASE_PATH")
 
+class LogsCreate(BaseModel, extra=Extra.allow):
+    user_id: str
+    service: str
+    action: Optional[str]
+    model: Optional[str]
+    object_id: Optional[str]
+    
+
 app = FastAPI(
     docs_url="/docs", openapi_url=f"/api/v1/openapi.json", root_path=BASE_PATH
 )
@@ -41,7 +49,12 @@ async def log_event(message: DeliveredMessage):
     response = b64decode(message.body)
     message_dict = json.loads(response.decode("utf-8"))
     message_dict["from"] = "MESSAGE_BROKER"
-    logger.info(message_dict)
+
+    try:
+        LogsCreate(**message_dict)
+        logger.info(message_dict)
+    except Exception as e:
+        logger.error(message_dict, "not valid", e)
 
     await message.channel.basic_ack(
         message.delivery.delivery_tag
@@ -78,14 +91,6 @@ def startup():
 @app.get("/")
 async def root():
     return RedirectResponse(url=f"{BASE_PATH}/docs")
-
-class LogsCreate(BaseModel, extra=Extra.allow):
-    user_id: str
-    service: str
-    action: Optional[str]
-    model: Optional[str]
-    object_id: Optional[str]
-    
 
 
 @app.post("/api/v1/log")
