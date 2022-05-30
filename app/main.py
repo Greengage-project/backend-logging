@@ -52,9 +52,9 @@ async def log_event(message: DeliveredMessage):
 
     try:
         LogsCreate(**message_dict)
-        logger.info(message_dict)
+        logger.info(json.dumps(message_dict))
     except Exception as e:
-        logger.error(message_dict, "not valid", e)
+        logger.error(json.dumps(message_dict), "not valid", e)
 
     await message.channel.basic_ack(
         message.delivery.delivery_tag
