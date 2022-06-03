@@ -26,7 +26,7 @@ class LogsCreate(BaseModel, extra=Extra.allow):
     action: Optional[str]
     model: Optional[str]
     object_id: Optional[str]
-    timestamp: Optional[str] = str(datetime.now())
+    timestamp: Optional[str] = datetime.now()
 
 
 app = FastAPI(
@@ -127,26 +127,33 @@ async def insert_log(
 @app.get("/api/v1/log")
 async def get_log(
     from_date: datetime = None,
-    to_date: datetime = None,
+    to_date: datetime = datetime.now(),
     model: str = None,
     action: str = None,
     service: str = None,
 ):
-    query = {}
+    query = {"match_all": {}}
     """
     Get logs
     """
     if from_date and to_date:
-        eo = "eo"
+        del query["match_all"] 
+        query["range"] = {
+         "@timestamp":{
+            "gte": "now-3d/d",
+            "lt": "now/d"
+         }
+      }
 
     if service or action or model:
+        del query["match_all"] 
         query["bool"] = { "must": [] }
     if service:
-        query["bool"]["must"].append({"term": {"service": service}})
+        query["bool"]["must"].append({"match": {"service": service}})
     if action:
-        query["bool"]["must"].append({"term": {"action": action}})
+        query["bool"]["must"].append({"match": {"action": action}})
     if model:
-        query["bool"]["must"].append({"term": {"model": model}})
+        query["bool"]["must"].append({"match": {"model": model}})
         
     return await es.search(
         index="logs",
