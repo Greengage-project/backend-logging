@@ -3,16 +3,22 @@ import json
 import logging
 import os
 from base64 import b64decode
+from datetime import datetime
 from sys import stdout
 from typing import Optional
 
 import aiormq
 from aiormq.abc import DeliveredMessage
+from elasticsearch import AsyncElasticsearch
+from elasticsearch.helpers import async_bulk
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Extra
 
 BASE_PATH = os.environ.get("BASE_PATH")
+ELASTICSEARCH_HOST = os.environ.get("ELASTICSEARCH_HOST", "elasticsearch")
+ELASTICSEARCH_PORT = os.environ.get("ELASTICSEARCH_PORT", 9200)
+
 
 class LogsCreate(BaseModel, extra=Extra.allow):
     user_id: str
@@ -20,11 +26,22 @@ class LogsCreate(BaseModel, extra=Extra.allow):
     action: Optional[str]
     model: Optional[str]
     object_id: Optional[str]
-    
+    timestamp: Optional[str] = str(datetime.now())
+
 
 app = FastAPI(
     docs_url="/docs", openapi_url=f"/api/v1/openapi.json", root_path=BASE_PATH
 )
+es = AsyncElasticsearch([
+    {'host': ELASTICSEARCH_HOST, 'port': ELASTICSEARCH_PORT, 'scheme': 'http'},
+])
+
+# This gets called once the app is shutting down.
+
+
+@app.on_event("shutdown")
+async def app_shutdown():
+    await es.close()
 
 # Define logger
 logger = logging.getLogger('mylogger')
@@ -53,6 +70,7 @@ async def log_event(message: DeliveredMessage):
     try:
         LogsCreate(**message_dict)
         logger.info(json.dumps(message_dict))
+        await es.index(index="logs", document=message_dict)
     except Exception as e:
         logger.error(json.dumps(message_dict), "not valid", e)
 
@@ -104,3 +122,34 @@ async def insert_log(
     message_dict = log_in.__dict__
     message_dict["from"] = "API"
     return logger.info(message_dict)
+
+
+@app.get("/api/v1/log")
+async def get_log(
+    from_date: datetime = None,
+    to_date: datetime = None,
+    model: str = None,
+    action: str = None,
+    service: str = None,
+):
+    query = {}
+    """
+    Get logs
+    """
+    if from_date and to_date:
+        eo = "eo"
+
+    if service or action or model:
+        query["bool"] = { "must": [] }
+    if service:
+        query["bool"]["must"].append({"term": {"service": service}})
+    if action:
+        query["bool"]["must"].append({"term": {"action": action}})
+    if model:
+        query["bool"]["must"].append({"term": {"model": model}})
+        
+    return await es.search(
+        index="logs",
+        body={"query": query},
+        size=20,
+    )

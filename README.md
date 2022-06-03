@@ -23,8 +23,8 @@ The service must be included within docker-compose. For example:
       - "5672:5672"
       - "15672:15672"
     environment:
-      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
-      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
     healthcheck:
       test: rabbitmq-diagnostics -q ping
       interval: 30s
@@ -49,12 +49,10 @@ The service must be included within docker-compose. For example:
         condition: service_healthy
     command: ["./wait-for-it.sh", "rabbitmq:5672", "--", "python", "./main.py"]
 ```
-The variable "RABBITMQ_DEFAULT_USER", contains the user name assigned to the Rabbitmq service, while the variable "RABBITMQ_DEFAULT_PASS" is the password used at login time. All the lines of code presented above have been taken as a reference from the [file](https://github.com/interlink-project/interlinker-service-augmenter/blob/master/docker-compose.yml) used for the local deployment of the servicepedia.
+The variable "RABBITMQ_USER", contains the user name assigned to the Rabbitmq service, while the variable "RABBITMQ_PASSWORD" is the password used at login time. All the lines of code presented above have been taken as a reference from the [file](https://github.com/interlink-project/interlinker-service-augmenter/blob/master/docker-compose.yml) used for the local deployment of the servicepedia.
 
 The following are all the environment variables that need to be specified, during the setup of the services.
 
-RABBITMQ_DEFAULT_USER=
-RABBITMQ_DEFAULT_PASS=
 RABBITMQ_HOST=
 RABBITMQ_USER=
 RABBITMQ_PASSWORD=
