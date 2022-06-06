@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+import uuid
 from base64 import b64decode
 from datetime import datetime
 from sys import stdout
@@ -26,19 +27,17 @@ class LogsCreate(BaseModel, extra=Extra.allow):
     action: Optional[str]
     model: Optional[str]
     object_id: Optional[str]
-    timestamp: Optional[str] = datetime.now()
+    timestamp: Optional[datetime] = datetime.now()
 
 
 app = FastAPI(
     docs_url="/docs", openapi_url=f"/api/v1/openapi.json", root_path=BASE_PATH
 )
 es = AsyncElasticsearch([
-    {'host': ELASTICSEARCH_HOST, 'port': ELASTICSEARCH_PORT, 'scheme': 'http'},
-])
+        {'host': ELASTICSEARCH_HOST, 'port': ELASTICSEARCH_PORT, 'scheme': 'http'},
+    ])
 
 # This gets called once the app is shutting down.
-
-
 @app.on_event("shutdown")
 async def app_shutdown():
     await es.close()
@@ -68,8 +67,8 @@ async def log_event(message: DeliveredMessage):
     message_dict["from"] = "MESSAGE_BROKER"
 
     try:
-        LogsCreate(**message_dict)
-        logger.info(json.dumps(message_dict))
+        message_dict = LogsCreate(**message_dict).dict()
+        logger.info(json.dumps(message_dict, default=str))
         await es.index(index="logs", document=message_dict)
     except Exception as e:
         logger.error(json.dumps(message_dict), "not valid", e)
@@ -131,6 +130,8 @@ async def get_log(
     model: str = None,
     action: str = None,
     service: str = None,
+    coproductionprocess_id: str = None,
+    user_id: str = None
 ):
     query = {"match_all": {}}
     """
@@ -139,13 +140,13 @@ async def get_log(
     if from_date and to_date:
         del query["match_all"] 
         query["range"] = {
-         "@timestamp":{
-            "gte": "now-3d/d",
-            "lt": "now/d"
+         "timestamp":{
+            "gte": from_date.isoformat(),
+            "lt": to_date.isoformat(),
          }
       }
 
-    if service or action or model:
+    if service or action or model or coproductionprocess_id or user_id:
         del query["match_all"] 
         query["bool"] = { "must": [] }
     if service:
@@ -154,9 +155,15 @@ async def get_log(
         query["bool"]["must"].append({"match": {"action": action}})
     if model:
         query["bool"]["must"].append({"match": {"model": model}})
+    if coproductionprocess_id:
+        query["bool"]["must"].append({"match": {"coproductionprocess_id": coproductionprocess_id}})
+    if user_id:
+        query["bool"]["must"].append({"match": {"user_id": user_id}})
         
     return await es.search(
         index="logs",
         body={"query": query},
         size=20,
     )
+
+
