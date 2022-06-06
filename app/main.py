@@ -26,7 +26,6 @@ class LogsCreate(BaseModel, extra=Extra.allow):
     service: str
     action: Optional[str]
     model: Optional[str]
-    object_id: Optional[str]
     timestamp: Optional[datetime] = datetime.now()
 
 
@@ -131,6 +130,7 @@ async def get_log(
     action: str = None,
     service: str = None,
     coproductionprocess_id: str = None,
+    team_id: str = None,
     user_id: str = None
 ):
     query = {"match_all": {}}
@@ -146,7 +146,7 @@ async def get_log(
          }
       }
 
-    if service or action or model or coproductionprocess_id or user_id:
+    if service or action or model or coproductionprocess_id or user_id or team_id:
         del query["match_all"] 
         query["bool"] = { "must": [] }
     if service:
@@ -159,7 +159,9 @@ async def get_log(
         query["bool"]["must"].append({"match": {"coproductionprocess_id": coproductionprocess_id}})
     if user_id:
         query["bool"]["must"].append({"match": {"user_id": user_id}})
-        
+    if user_id:
+        query["bool"]["must"].append({"match": {"team_id": team_id}})
+
     return await es.search(
         index="logs",
         body={"query": query},
