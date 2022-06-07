@@ -59,7 +59,11 @@ rabbitmq_host = os.environ.get("RABBITMQ_HOST")
 rabbitmq_user = os.environ.get("RABBITMQ_USER")
 rabbitmq_password = os.environ.get("RABBITMQ_PASSWORD")
 
-
+async def send_to_backends(message_dict):
+    logger.info(json.dumps(message_dict, default=str))
+    await es.index(index="logs", document=message_dict)
+    return True
+    
 async def log_event(message: DeliveredMessage):
     response = b64decode(message.body)
     message_dict = json.loads(response.decode("utf-8"))
@@ -67,8 +71,7 @@ async def log_event(message: DeliveredMessage):
 
     try:
         message_dict = LogsCreate(**message_dict).dict()
-        logger.info(json.dumps(message_dict, default=str))
-        await es.index(index="logs", document=message_dict)
+        await send_to_backends(message_dict)
     except Exception as e:
         logger.error(json.dumps(message_dict), "not valid", e)
 
@@ -117,9 +120,9 @@ async def insert_log(
     """
     Insert new log
     """
-    message_dict = log_in.__dict__
+    message_dict = log_in.dict()
     message_dict["from"] = "API"
-    return logger.info(message_dict)
+    return await send_to_backends(message_dict)
 
 
 @app.get("/api/v1/log")
