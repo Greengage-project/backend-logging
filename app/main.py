@@ -6,13 +6,13 @@ import uuid
 from base64 import b64decode
 from datetime import datetime
 from sys import stdout
-from typing import Optional
+from typing import List, Optional
 
 import aiormq
 from aiormq.abc import DeliveredMessage
 from elasticsearch import AsyncElasticsearch
 from elasticsearch.helpers import async_bulk
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Extra
 
@@ -126,46 +126,51 @@ async def insert_log(
 async def get_log(
     from_date: datetime = None,
     to_date: datetime = datetime.now(),
-    model: str = None,
-    action: str = None,
-    service: str = None,
-    coproductionprocess_id: str = None,
-    team_id: str = None,
-    user_id: str = None
+    models: List[str] = Query(None),
+    actions: List[str] = Query(None),
+    services: List[str] = Query(None),
+    coproductionprocess_ids: List[str] = Query(None),
+    team_ids: List[str] = Query(None),
+    user_ids: List[str] = Query(None),
+    size: int = 20
 ):
+    if size > 200:
+        size = 200
     query = {"match_all": {}}
     """
     Get logs
     """
+    if (from_date and to_date) or services or actions or models or coproductionprocess_ids or user_ids or team_ids:
+        del query["match_all"]
+    
     if from_date and to_date:
-        del query["match_all"] 
         query["range"] = {
-         "timestamp":{
-            "gte": from_date.isoformat(),
-            "lt": to_date.isoformat(),
-         }
-      }
+            "timestamp": {}
+        }
+        query["range"]["timestamp"]["gte"] = from_date.isoformat()
+        query["range"]["timestamp"]["lt"] = to_date.isoformat()
+      
+    
 
-    if service or action or model or coproductionprocess_id or user_id or team_id:
-        del query["match_all"] 
+    if services or actions or models or coproductionprocess_ids or user_ids or team_ids:
         query["bool"] = { "must": [] }
-    if service:
-        query["bool"]["must"].append({"match": {"service": service}})
-    if action:
-        query["bool"]["must"].append({"match": {"action": action}})
-    if model:
-        query["bool"]["must"].append({"match": {"model": model}})
-    if coproductionprocess_id:
-        query["bool"]["must"].append({"match": {"coproductionprocess_id": coproductionprocess_id}})
-    if user_id:
-        query["bool"]["must"].append({"match": {"user_id": user_id}})
-    if user_id:
-        query["bool"]["must"].append({"match": {"team_id": team_id}})
+    if services:
+        query["bool"]["must"].append({"terms": {"service.keyword": services}})
+    if actions:
+        query["bool"]["must"].append({"terms": {"action.keyword": actions}})
+    if models:
+        query["bool"]["must"].append({"terms": {"model.keyword": models}})
+    if coproductionprocess_ids:
+        query["bool"]["must"].append({"terms": {"coproductionprocess_id.keyword": coproductionprocess_ids}})
+    if user_ids:
+        query["bool"]["must"].append({"terms": {"user_id.keyword": user_ids}})
+    if team_ids:
+        query["bool"]["must"].append({"terms": {"team_id.keyword": team_ids}})
 
     return await es.search(
         index="logs",
         body={"query": query},
-        size=20,
+        size=size,
     )
 
 
