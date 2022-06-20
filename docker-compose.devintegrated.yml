@@ -14,7 +14,7 @@ services:
     env_file:
       - .env
     restart: on-failure
-    command: "wait-for-it --service ${RABBITMQ_HOST}:${RABBITMQ_PORT} --service ${ELASTIC_HOST}:${ELASTIC_PORT} -- uvicorn main:app --reload --host 0.0.0.0 --port ${PORT}"
+    command: "wait-for-it --service ${ELASTIC_HOST}:${ELASTIC_PORT} -- uvicorn main:app --reload --host 0.0.0.0 --port ${PORT}"
     logging:
       driver: "json-file"
       options:
