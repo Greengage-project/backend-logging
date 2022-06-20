@@ -17,8 +17,10 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Extra
 
 BASE_PATH = os.environ.get("BASE_PATH")
-ELASTICSEARCH_HOST = os.environ.get("ELASTICSEARCH_HOST", "elasticsearch")
-ELASTICSEARCH_PORT = int(os.environ.get("ELASTICSEARCH_PORT", 9200))
+ELASTIC_HOST = os.environ.get("ELASTIC_HOST", "elasticsearch")
+ELASTIC_PORT = int(os.environ.get("ELASTIC_PORT", 9200))
+ELASTIC_USERNAME= os.environ.get("ELASTIC_USERNAME", "elastic")
+ELASTIC_PASSWORD = os.environ.get("ELASTIC_PASSWORD", "elastic")
 
 
 class LogsCreate(BaseModel, extra=Extra.allow):
@@ -33,8 +35,8 @@ app = FastAPI(
     docs_url="/docs", openapi_url=f"/api/v1/openapi.json", root_path=BASE_PATH
 )
 es = AsyncElasticsearch([
-        {'host': ELASTICSEARCH_HOST, 'port': ELASTICSEARCH_PORT, 'scheme': 'http'},
-    ])
+        {'host': ELASTIC_HOST, 'port': ELASTIC_PORT, 'scheme': 'http', },
+    ], http_auth=(ELASTIC_USERNAME, ELASTIC_PASSWORD))
 
 # This gets called once the app is shutting down.
 @app.on_event("shutdown")
