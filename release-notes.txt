@@ -1,5 +1,4 @@
-VERSION v1.0.4
+VERSION v1.1.0
 
-NEW
-• Data to Elasticsearch
-• Elasticsearch filter endpoint
+IMPROVED
+• Removed rabbitmq connection
