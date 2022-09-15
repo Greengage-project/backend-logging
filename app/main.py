@@ -69,7 +69,7 @@ async def insert_log(
     """
     message_dict = log_in.dict()
     message_dict["from"] = "API"
-    if not "timestamp" in message_dict:
+    if not "timestamp" in message_dict or message_dict["timestamp"] == None:
         message_dict["timestamp"] = datetime.now()
     return send_to_backends(message_dict)
 
