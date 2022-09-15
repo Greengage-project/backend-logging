@@ -22,7 +22,7 @@ class LogsCreate(BaseModel, extra=Extra.allow):
     service: str
     action: Optional[str]
     model: Optional[str]
-    timestamp: Optional[datetime] = datetime.now()
+    timestamp: Optional[datetime]
 
 
 app = FastAPI(
@@ -69,6 +69,8 @@ async def insert_log(
     """
     message_dict = log_in.dict()
     message_dict["from"] = "API"
+    if not "timestamp" in message_dict:
+        message_dict["timestamp"] = datetime.now()
     return send_to_backends(message_dict)
 
 
