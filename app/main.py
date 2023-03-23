@@ -69,8 +69,8 @@ async def insert_log(
     """
     message_dict = log_in.dict()
     message_dict["from"] = "API"
-    if not "timestamp" in message_dict or message_dict["timestamp"] == None:
-        message_dict["timestamp"] = datetime.now()
+    if not "@timestamp" in message_dict or message_dict["@timestamp"] == None:
+        message_dict["@timestamp"] = datetime.now()
     return send_to_backends(message_dict)
 
 
@@ -97,10 +97,10 @@ async def get_log(
     
     if from_date and to_date:
         query["range"] = {
-            "timestamp": {}
+            "@timestamp": {}
         }
-        query["range"]["timestamp"]["gte"] = from_date.isoformat()
-        query["range"]["timestamp"]["lt"] = to_date.isoformat()
+        query["range"]["@timestamp"]["gte"] = from_date.isoformat()
+        query["range"]["@timestamp"]["lt"] = to_date.isoformat()
 
     if services or actions or models or coproductionprocess_ids or user_ids or team_ids:
         query["bool"] = { "must": [] }
