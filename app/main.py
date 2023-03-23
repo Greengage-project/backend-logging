@@ -51,7 +51,7 @@ logger.addHandler(consoleHandler)
 
 def send_to_backends(message_dict):
     logger.info(json.dumps(message_dict, default=str))
-    es.index(index="logs", doc_type="log", body=message_dict)
+    es.index(index="logs", doc_type="_doc", body=message_dict)
     return True
 
 @app.get("/")
